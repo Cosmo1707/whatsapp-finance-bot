@@ -11,7 +11,7 @@ class GoogleSheetsService:
         
         current_dir = os.path.dirname(os.path.abspath(__file__))
         project_dir = os.path.dirname(current_dir)
-        self.credentials_path = os.path.join(project_dir, "config", "google-credentials.json")
+        self.credentials_path = os.path.join(project_dir, "google-credentials.json")
         
         self.service = self._authenticate()
     

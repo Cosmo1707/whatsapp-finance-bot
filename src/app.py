@@ -24,6 +24,7 @@ def verify_webhook():
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
+    print("========== POST RECIBIDO ==========")
     data = request.json
     
     if data.get('object') == 'whatsapp_business_account':

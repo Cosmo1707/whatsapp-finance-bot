@@ -1,0 +1,62 @@
+
+### 1. Resumen Ejecutivo: La Receta del Éxito para tu Próximo Bot
+
+Este es el esqueleto de lo que funcionó. Te servirá para replicar el proceso en el negocio de tu pareja o en cualquier otro proyecto.
+
+#### Fase 1: Configuración en Meta (La Base)
+
+1.  **App en Meta Developers:**
+    *   Crear una app tipo "Negocio" en developers.facebook.com.
+    *   Agregar el producto "WhatsApp Business".
+    *   **No usar el número de prueba para producción.** No funcionó porque sus webhooks se quedan en el panel.
+
+2.  **El Número Real (¡El Asunto Crítico!):**
+    *   Necesitas un chip **nuevo o uno que NO TENGA WhatsApp personal activo**.
+    *   Si el número ya tenía WhatsApp, **debes eliminar la cuenta de WhatsApp en el celular** (Ajustes > Cuenta > Eliminar cuenta). Este fue nuestro gran descubrimiento. Si no lo borras, la API lo rechazará.
+
+3.  **Registrar el Número en la API:**
+    *   No basta con agregarlo en el panel. Debes ejecutar el comando mágico `curl` que usamos. Esto lo vincula a la nube de Meta, no a la app del celular.
+    *   Este comando necesita el `Phone Number ID` y el `Token de Sistema` (lo vemos abajo).
+
+4.  **Token de Acceso Permanente (El Usuario del Sistema):**
+    *   Los tokens temporales del panel caducan. Tienes que ir al **Business Manager > Usuarios del Sistema**.
+    *   Crear uno (ej. `FinanceBot`), asignarle la app como administrador y generar un token **sin caducidad** con los permisos `whatsapp_business_messaging` y `whatsapp_business_management`.
+
+5.  **Webhook:**
+    *   Configurar la URL de tu servidor (Render) con el token de verificación (`finance_tracker_webhook_123`).
+    *   Suscribirse a los campos **`messages`** y **`message_statuses`**. Suscribirse a `messages` solo no fue suficiente.
+
+6.  **Método de Pago y Términos:**
+    *   Agregar un método de pago en el Business Manager, aunque sea para recibir mensajes (es gratis, pero lo exigen).
+    *   Aceptar los Términos de Servicio de WhatsApp Business. Suelen aparecer como un banner en el panel de administración de WhatsApp.
+
+#### Fase 2: Código y Despliegue (Python + Render + Google Sheets)
+
+1.  **Estructura del Proyecto Python:**
+    *   `src/app.py`: El servidor Flask que recibe los POST.
+    *   `src/whatsapp_service.py`: Para enviar mensajes de vuelta usando la API de Meta.
+    *   `src/sheets_service.py`: Para escribir en Google Sheets usando una cuenta de servicio.
+    *   `src/message_handler.py`: La lógica que decide qué hacer con cada mensaje (el cerebro).
+    *   `src/parser.py`: Para convertir "comida menu 12" en datos.
+    *   `config/settings.py`: Lee las variables de entorno.
+    *   `config/google-credentials.json`: La clave secreta de la cuenta de servicio de Google. **¡NUNCA se sube a GitHub!**
+
+2.  **Google Sheets:**
+    *   Crear una hoja de cálculo y compartirla (con permisos de Editor) con el correo de la cuenta de servicio de Google Cloud.
+    *   Activar Google Sheets API en Google Cloud.
+
+3.  **Deploy en Render:**
+    *   Conectar el repositorio de GitHub.
+    *   Comando de inicio: `python src/app.py`.
+    *   Variables de entorno (`WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, etc.).
+    *   Archivo Secreto (Secret File): Aquí se sube el contenido del archivo `google-credentials.json` de forma segura. Render lo crea en la ruta que le indiques.
+
+#### Fase 3: El Toque Final y las Pruebas
+
+1.  **Seguridad (Opcional pero recomendado):** Filtrar por números de teléfono para que solo ustedes dos puedan usar el bot.
+2.  **Pruebas:**
+    *   Probar con CURL el endpoint del Render. ¡Esto siempre funcionó!
+    *   Probar con el botón "Enviar a mi servidor" en el panel de webhooks de Meta.
+    *   La prueba de fuego: enviar un WhatsApp desde tu número personal al número del bot.
+
+---

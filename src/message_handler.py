@@ -6,6 +6,12 @@ from src.parser import parse_message
 from src.sheets_service import GoogleSheetsService
 from src.whatsapp_service import WhatsAppService
 
+# Números autorizados para usar el bot
+NUMEROS_AUTORIZADOS = [
+    "51986981127",  # Tú, Daniel
+    "51924400897"    # Tu pareja, Leslye 
+]
+
 class MessageHandler:
     def __init__(self):
         self.whatsapp = WhatsAppService()
@@ -13,6 +19,24 @@ class MessageHandler:
     
     def process_message(self, from_phone, message):
         message = message.strip()
+        
+        # --- VERIFICACIÓN DE SEGURIDAD ---
+        if from_phone not in NUMEROS_AUTORIZADOS:
+            print(f"Mensaje de cliente antiguo: {from_phone}")
+            
+            # Guardar en hoja Clientas
+            self.sheets.append_client(from_phone, message)
+            
+            # Responder redirigiendo a tu número personal
+            respuesta = (
+                "Hola 👋 Este número ya no tiene atención por WhatsApp.\n"
+                "Para cualquier consulta, escríbeme a mi número personal:\n"
+                "📱 +51 924 400 897 (Leslye)\n"
+                "¡Gracias!"
+            )
+            self.whatsapp.send_message(from_phone, respuesta)
+            return
+        # --- FIN DE LA VERIFICACIÓN ---
         
         # Comandos especiales
         if message.lower() == '/ayuda':

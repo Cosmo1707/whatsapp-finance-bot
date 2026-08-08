@@ -28,9 +28,24 @@ class GoogleSheetsService:
         
         result = self.service.spreadsheets().values().append(
             spreadsheetId=self.spreadsheet_id,
-            range='!A:E',
+            range='A:E',
             valueInputOption='USER_ENTERED',
             insertDataOption='INSERT_ROWS',
             body=body
         ).execute()
         return True
+
+    def append_client(self, phone, message):
+        """Guarda el número de una clienta antigua en la hoja Clientas"""
+        from datetime import datetime
+        fecha = datetime.now().strftime('%d/%m/%Y %H:%M')
+        values = [[fecha, phone, message]]
+        body = {'values': values}
+        
+        self.service.spreadsheets().values().append(
+            spreadsheetId=self.spreadsheet_id,
+            range='Clientas!A:C',
+            valueInputOption='USER_ENTERED',
+            insertDataOption='INSERT_ROWS',
+            body=body
+        ).execute()

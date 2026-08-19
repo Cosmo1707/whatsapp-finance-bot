@@ -22,13 +22,13 @@ class GoogleSheetsService:
         )
         return build('sheets', 'v4', credentials=credentials)
     
-    def append_expense(self, fecha, categoria, descripcion, monto, tipo):
-        values = [[fecha, categoria, descripcion, monto, tipo]]
+    def append_expense(self, fecha, categoria, descripcion, monto, tipo, persona):
+        values = [[fecha, categoria, descripcion, monto, tipo, persona]]
         body = {'values': values}
         
         result = self.service.spreadsheets().values().append(
             spreadsheetId=self.spreadsheet_id,
-            range='A:E',
+            range='A:F',
             valueInputOption='USER_ENTERED',
             insertDataOption='INSERT_ROWS',
             body=body
@@ -37,8 +37,9 @@ class GoogleSheetsService:
 
     def append_client(self, phone, message):
         """Guarda el número de una clienta antigua en la hoja Clientas"""
-        from datetime import datetime
-        fecha = datetime.now().strftime('%d/%m/%Y %H:%M')
+        from datetime import datetime, timedelta, timezone
+        fecha = datetime.now(timezone.utc) - timedelta(hours=5)
+        fecha = fecha.strftime('%d/%m/%Y %H:%M')
         values = [[fecha, phone, message]]
         body = {'values': values}
         

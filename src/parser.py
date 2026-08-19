@@ -1,12 +1,12 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
-def parse_message(message):
+def parse_message(message, from_phone=None):
     """
     Parsea mensajes como:
     "antojo chocolate 5.40"
     "salario agosto 5000"
     
-    Retorna: (categoria, descripcion, monto) o None si no entiende
+    Retorna: dict con los datos o None si no entiende
     """
     parts = message.strip().split()
     
@@ -22,14 +22,15 @@ def parse_message(message):
     # Primera parte es la categoría
     categoria = parts[0].lower().capitalize()
     
-    # Lo del medio es la descripción (puede estar vacío)
+    # Lo del medio es la descripción
     if len(parts) > 2:
         descripcion = " ".join(parts[1:-1])
     else:
         descripcion = categoria
     
-    # Fecha automática
-    fecha = datetime.now().strftime('%d/%m/%Y %H:%M')
+    # Fecha automática en hora peruana (UTC-5)
+    fecha = datetime.now(timezone.utc) - timedelta(hours=5)
+    fecha = fecha.strftime('%d/%m/%Y %H:%M')
     
     # Determinar tipo
     categorias_ingreso = ["salario", "sueldo", "cobro", "venta", "ingreso"]
@@ -38,10 +39,19 @@ def parse_message(message):
     else:
         tipo = "Egreso"
     
+    # Determinar persona
+    if from_phone == "51986981127":
+        persona = "Daniel"
+    elif from_phone == "51924400897":
+        persona = "Leslye"
+    else:
+        persona = "Desconocido"
+    
     return {
         'fecha': fecha,
         'categoria': categoria,
         'descripcion': descripcion,
         'monto': monto,
-        'tipo': tipo
+        'tipo': tipo,
+        'persona': persona
     }

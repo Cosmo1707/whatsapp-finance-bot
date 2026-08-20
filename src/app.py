@@ -37,7 +37,7 @@ def webhook():
                     if message.get('type') == 'text':
                         from_phone = message.get('from')
                         text = message.get('text', {}).get('body', '')
-                        
+                        print(f"DEBUG: Telefono recibido = {from_phone}")
                         handler.process_message(from_phone, text)
     
     return 'ok', 200

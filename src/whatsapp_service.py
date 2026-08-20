@@ -23,4 +23,5 @@ class WhatsAppService:
             "text": {"body": message}
         }
         response = requests.post(self.api_url, headers=self.headers, json=payload)
+        print(f"DEBUG SEND: Status {response.status_code} | Response: {response.text}")
         return response.json()

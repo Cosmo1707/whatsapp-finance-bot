@@ -1,0 +1,321 @@
+# 📘 RESUMEN ACUMULADO DEL PROYECTO — WhatsApp Finance Bot
+
+> **Última actualización:** 19/08/2026  
+> **Función de este documento:** Contexto maestro para retomar el proyecto exactamente donde se dejó, sin repetir errores ni pasos obsoletos.  
+> **Estado global:** 🟢 Funcional (producción) + ⚠️ pendientes de configuración final.
+
+---
+
+## 1. 🎯 OBJETIVO GENERAL DEL PROYECTO
+
+Crear un bot de WhatsApp que:
+
+- Reciba mensajes de finanzas personales tipo `"comida menu 12"`.
+- Los registre automáticamente en **Google Sheets compartido** con la pareja.
+- Responda con confirmación.
+- Permita identificar quién registró cada gasto (**Daniel** o **Leslye**).
+- Redirija a cualquier número no autorizado hacia el WhatsApp personal de Daniel y lo registre en una hoja separada.
+- Funcione 24/7 sin depender de la computadora local.
+
+---
+
+## 2. 👥 PREFERENCIAS Y MEMORIA DEL USUARIO
+
+- **Usuario principal:** Daniel
+  - Trader.
+  - Está aprendiendo Python.
+  - Ya construyó un sistema de análisis macroeconómico con SQLite, APIs, DeepSeek y Telegram.
+  - Quiere aprovechar lo aprendido para crear bots de WhatsApp.
+  - Persistente: no se rinde si una solución falla; prefiere agotar alternativas.
+  - Empresa personal: **Daly Deluxe** (rubro joyería, actualmente inactiva).
+  - Número personal: `+51 986 981 127`.
+
+- **Pareja:** Leslye
+  - Tiene un negocio de belleza / manicura: **Studio 28**.
+  - Se planea crear un bot futuro para registrar servicios, ingresos y egresos del negocio.
+  - Se desea conectar más adelante con **DeepSeek** para consultas analíticas.
+
+- **Trabajadora de Leslye:** se prevé que también use el bot del negocio en el futuro.
+
+- **Preferencias técnicas:**
+  - Google Sheets es preferido sobre Excel para compartir sin licencias.
+  - Se valora SQLite para análisis futuro, pero Google Sheets es el “dashboard visual” para no técnicos.
+  - Interés en arquitectura híbrida: Sheets para visualización, SQLite para IA.
+  - Interés en limitar el bot a números autorizados.
+
+---
+
+## 3. ✅ ESTADO ACTUAL DEL PROYECTO
+
+| Componente | Estado | Notas |
+|------------|--------|-------|
+| WhatsApp Business API | 🟢 Activo | Número real `+51 986 152 853` en modo **LIVE**. |
+| App de Meta | 🟢 Publicada | ID: `2032794367602420`. |
+| Webhook | 🟢 Verificado | URL: `https://whatsapp-finance-bot-xqos.onrender.com/webhook`. |
+| Suscripción `messages` | 🟢 Suscrito | Se probó con “Enviar a mi servidor”. |
+| Servidor Render | 🟢 Vivo | `https://whatsapp-finance-bot-xqos.onrender.com`. |
+| Google Sheets | 🟢 Recibe datos | ID: `1nURELJ3TrLqCbMxpeeB-bDjCJYy7XpzM9prIQYieerk`. |
+| Bot responde | 🟢 Funcional | Responde confirmación a usuarios autorizados. |
+| Filtro de seguridad | 🟢 Implementado | Solo números autorizados registran gastos. |
+| Hoja `Clientas` | 🟢 Implementada | Registra teléfono, fecha y mensaje de no autorizados. |
+| Hora peruana | 🟢 Implementado | `UTC-5` en fechas. |
+| Columna Persona | 🟢 Implementado | Columna F en hoja principal. |
+| Verificación de negocio (DNI) | 🟢 Aprobada | Meta validó a Daniel como representante legal. |
+| Coexistencia API + App | 🟡 Pendiente | Ya aprobada la verificación; falta activar y configurar. |
+| Número visible para todos | 🔴 Pendiente | Solo Daniel puede escribirle actualmente. |
+
+---
+
+## 4. 🏗️ ARQUITECTURA VIGENTE
+
+```
+Usuario (WhatsApp personal)
+        │
+        │ mensaje "comida menu 12"
+        ▼
+Número del bot: +51 986 152 853
+        │
+        ▼
+Meta Cloud API (WhatsApp Business API)
+        │
+        │ webhook POST
+        ▼
+Render (Flask) — app.py
+        │
+        ├── parser.py → interpreta mensaje, asigna persona y hora
+        │
+        ├── message_handler.py → aplica seguridad y decide respuesta
+        │
+        ├── sheets_service.py → escribe en Google Sheets
+        │
+        └── whatsapp_service.py → envía confirmación por WhatsApp
+```
+
+---
+
+## 5. 📁 ARCHIVOS Y CARPETAS ACTIVAS
+
+### En el repositorio de GitHub
+```
+whatsapp-finance-bot/
+├── .env                      # Variables de entorno (NO se sube a GitHub)
+├── .gitignore                # Excluye .env, google-credentials.json, __pycache__/, *.exe
+├── requirements.txt          # Dependencias Python
+├── config/
+│   ├── __init__.py
+│   └── settings.py           # Lee variables de entorno
+└── src/
+    ├── __init__.py
+    ├── app.py                # Servidor Flask, webhook GET/POST
+    ├── parser.py             # Parseo de mensajes, hora peruana, persona
+    ├── message_handler.py    # Lógica de seguridad y respuestas
+    ├── sheets_service.py     # Escritura en Sheets (gastos y clientas)
+    └── whatsapp_service.py   # Envío de mensajes WhatsApp
+```
+
+### En Render (variables de entorno)
+| Variable | Valor |
+|----------|-------|
+| `WHATSAPP_PHONE_NUMBER_ID` | `1165872806618677` |
+| `WHATSAPP_ACCESS_TOKEN` | Token de sistema permanente (`FinanceBot`) |
+| `WHATSAPP_VERIFY_TOKEN` | `finance_tracker_webhook_123` |
+| `WHATSAPP_API_VERSION` | `v17.0` |
+| `SPREADSHEET_ID` | `1nURELJ3TrLqCbMxpeeB-bDjCJYy7XpzM9prIQYieerk` |
+
+### Secret File en Render
+- Archivo: `google-credentials.json`
+- Contiene las credenciales de la cuenta de servicio de Google.
+- El código lo busca en la raíz del proyecto (`project_dir/google-credentials.json`).
+
+---
+
+## 6. 🧠 LÓGICA ACTUAL DE SCRIPTS
+
+### `config/settings.py`
+- Carga variables de entorno con `python-dotenv`.
+- Define:
+  - `WHATSAPP_PHONE_NUMBER_ID`
+  - `WHATSAPP_ACCESS_TOKEN`
+  - `WHATSAPP_VERIFY_TOKEN`
+  - `WHATSAPP_API_VERSION`
+  - `WHATSAPP_API_URL = f"https://graph.facebook.com/{WHATSAPP_API_VERSION}/{WHATSAPP_PHONE_NUMBER_ID}/messages"`
+  - `SPREADSHEET_ID`
+  - `GOOGLE_CREDENTIALS = 'config/google-credentials.json'` (ruta local; en Render se resuelve con `project_dir`)
+
+### `src/app.py`
+- Ruta `/webhook` GET: verificación del webhook (`hub.mode`, `hub.verify_token`, `hub.challenge`).
+- Ruta `/webhook` POST: recibe `data`, recorre `entry → changes → value → messages`, extrae `from_phone` y `text`, y llama a `handler.process_message(from_phone, text)`.
+- Retorna `ok`, 200.
+
+### `src/parser.py`
+- Función: `parse_message(message, from_phone=None)`
+- Parsea:
+  - `partes[0]` → categoría
+  - `partes[1:-1]` → descripción
+  - `partes[-1]` → monto (float)
+- Fecha automática en hora peruana:
+  - `datetime.now(timezone.utc) - timedelta(hours=5)`
+  - Formato: `%d/%m/%Y %H:%M`
+- Tipo:
+  - Categorías de ingreso: `salario`, `sueldo`, `cobro`, `venta`, `ingreso` → `Ingreso`
+  - Lo demás → `Egreso`
+- Persona:
+  - `"51986981127"` → Daniel
+  - `"519XXXXXXX"` → Leslye (⚠️ debe reemplazarse por su número real)
+  - Otro → Desconocido
+- Retorna `None` si no puede parsear.
+
+### `src/sheets_service.py`
+- Clase `GoogleSheetsService`
+- Autenticación con cuenta de servicio.
+- `append_expense(fecha, categoria, descripcion, monto, tipo, persona)`:
+  - Escribe en `range='A:F'`
+  - Columnas: A Fecha, B Categoría, C Descripción, D Monto, E Tipo, F Persona.
+- `append_client(phone, message)`:
+  - Escribe en `range='Clientas!A:C'`
+  - Columnas: A Fecha, B Teléfono, C Mensaje.
+  - Fecha en hora peruana.
+
+### `src/message_handler.py`
+- Lista `NUMEROS_AUTORIZADOS`:
+  - `"51986981127"` (Daniel)
+  - `"519XXXXXXX"` (Leslye, pendiente de actualizar)
+- Lógica de seguridad:
+  - Si `from_phone` NO está autorizado:
+    - Llama a `append_client(from_phone, message)`.
+    - Envía mensaje de redirección:
+      ```
+      Hola 👋 Este número ya no tiene atención por WhatsApp.
+      Para cualquier consulta, escríbeme a mi número personal:
+      📱 +51 986 981 127 (Daniel)
+      ¡Gracias!
+      ```
+    - Retorna.
+- Comando `/ayuda`:
+  - Muestra instrucciones de uso.
+- Parseo y guardado:
+  - Llama a `parse_message(message, from_phone)`.
+  - Si hay datos, llama a `append_expense(...)`.
+  - Envía confirmación:
+    ```
+    ✅ {tipo} registrado por {persona}:
+    📌 {categoria}: {descripcion}
+    💰 S/ {monto:.2f}
+    📅 {fecha}
+    ```
+- Si no entiende, envía mensaje de ayuda.
+
+### `src/whatsapp_service.py`
+- Clase `WhatsAppService`
+- `send_message(to_phone, message)`:
+  - POST a `WHATSAPP_API_URL`.
+  - Encabezados: `Authorization: Bearer {access_token}`, `Content-Type: application/json`.
+
+---
+
+## 7. 🧪 PROBLEMAS RESUELTOS RECIENTEMENTE
+
+1. **Hora incorrecta (UTC vs UTC-5)**
+   - Se implementó `timedelta(hours=5)`.
+   - Estado: resuelto.
+
+2. **Falta de columna Persona**
+   - Se agregó columna F.
+   - Se actualizó `parser.py`, `sheets_service.py`, `message_handler.py`.
+   - Estado: resuelto.
+
+3. **Teléfono no visible en hoja Clientas**
+   - Se corrigió `append_client` para incluir `phone`.
+   - Estado: resuelto.
+
+4. **Instalador de Git subido al repositorio**
+   - Se subió accidentalmente `Git-2.55.0.3-64-bit.exe`.
+   - Se eliminó y se agregó `*.exe` al `.gitignore`.
+   - Estado: resuelto.
+
+5. **Error al ejecutar `sheets_service.py` suelto**
+   - `ModuleNotFoundError: No module named 'config.settings'`
+   - Es esperado: solo se ejecuta desde `python src/app.py`.
+   - Estado: aclarado.
+
+---
+
+## 8. 🏆 LOGROS DEL PROYECTO
+
+- Bot funcional en producción.
+- Número real verificado en modo LIVE.
+- Webhook configurado y verificado.
+- Render desplegado y respondiendo.
+- Google Sheets recibe gastos.
+- Filtro de seguridad implementado.
+- Redirección de clientas antiguas.
+- Registro de desconocidos en hoja `Clientas`.
+- Verificación de negocio aprobada (validación con DNI).
+- Token de acceso permanente configurado.
+- GitHub configurado con repositorio.
+- Render sincronizado con GitHub.
+
+---
+
+## 9. ⏳ PENDIENTES Y PRÓXIMOS PASOS
+
+### Críticos
+- [ ] **Activar coexistencia** para que Leslye y cualquier contacto puedan ver/escribir al número.
+- [ ] **Definir nombre comercial** para el chat (Meta pidió cambio de nombre).
+- [ ] **Reemplazar `519XXXXXXX`** por el número real de Leslye en `message_handler.py`.
+
+### Importantes
+- [ ] **Probar flujo completo** tras último deploy:
+  - Daniel envía gasto → debe registrar en hora peruana y columna Persona.
+  - Leslye envía gasto → debe registrar como Leslye.
+  - Número desconocido → debe responder redirección y guardar en `Clientas`.
+- [ ] **Verificar que la ruta de credenciales funcione en local y en Render.**
+  - Local: el archivo está en `config/google-credentials.json`.
+  - En código se busca en la raíz `google-credentials.json`.
+  - Armonizar para evitar confusiones.
+
+### Futuros
+- [ ] Comando `trabajo` para el negocio de Leslye.
+- [ ] Base SQLite en Render para análisis con DeepSeek.
+- [ ] Dashboard visual en Google Sheets para el negocio.
+- [ ] Alertas automáticas (pago de alquiler, etc.).
+- [ ] Evaluar número virtual (TextNow) si el actual sigue bloqueado.
+
+---
+
+## 10. 🗑️ DECISIONES OBSOLETAS O REEMPLAZADAS
+
+### Número de prueba `+1 555 203 3218`
+- **Estado:** obsoleto para producción.
+- **Por qué:** no envía webhooks automáticos a servidores externos; solo sirve para pruebas del panel.
+
+### Ngrok
+- **Estado:** obsoleto.
+- **Por qué:** solo se usó para exponer localhost antes de Render; Render provee URL pública 24/7.
+
+### Registro del número real eliminando la cuenta de WhatsApp
+- **Estado:** reemplazado por coexistencia.
+- **Por qué:** se creyó que era necesario elegir entre API o app; después supimos que existe “coexistencia” para usar ambas.
+
+### TextNow / número virtual
+- **Estado:** alternativa no utilizada.
+- **Por qué:** se optó por coexistencia con el número actual tras aprobar verificación.
+
+---
+
+## 11. 📌 CONTEXTO ADICIONAL PARA UNA NUEVA CONVERSACIÓN
+
+- Daniel ya pasó por una curva de aprendizaje larga.
+- Se frustró con los pasos burocráticos de Meta, pero persistió.
+- Confía en preguntar a la IA de Meta Developers como ayuda.
+- Quiere que el bot sea visible para todos, no solo para él.
+- El bot actual se usa para finanzas personales de Daniel y Leslye.
+- El número del bot es el antiguo número de la empresa de Daniel, por lo que algunas clientas antiguas podrían escribir.
+- Se previó que los números desconocidos reciban un mensaje de redirección.
+- GitHub es visto por Daniel como “nube de código” y Render como “servidor encendido”.
+- Daniel prefiere Google Sheets sobre Excel.
+- Está dispuesto a pagar pequeñas cantidades si es necesario (Render disk $0.25/GB, etc.) pero actualmente usa plan gratuito.
+
+---
+
+**Fin del resumen actualizado.**

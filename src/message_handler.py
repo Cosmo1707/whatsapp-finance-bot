@@ -54,7 +54,7 @@ class MessageHandler:
             return
         
         # Intentar parsear
-        data = parse_message(message)
+        data = parse_message(message, from_phone)
         
         if data:
             # Guardar en Sheets
@@ -63,7 +63,8 @@ class MessageHandler:
                 data['categoria'],
                 data['descripcion'],
                 data['monto'],
-                data['tipo']
+                data['tipo'],
+                data['persona']
             )
             # Confirmar
             confirmacion = (

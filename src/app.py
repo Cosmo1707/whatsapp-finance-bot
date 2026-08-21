@@ -46,24 +46,34 @@ def webhook():
                     if message.get('type') == 'text':
                         from_phone = message.get('from')
                         text = message.get('text', {}).get('body', '')
+                        message_id = message.get('id', '')
+                        
                         print(f"DEBUG: Mensaje de {from_phone}: {text}")
+                        
+                        # Verificar duplicado para cualquier mensaje (finanzas o studio28)
+                        if message_id:
+                            if verificar_duplicado(message_id):
+                                print(f"Mensaje duplicado en finanzas: {message_id}")
+                                continue
+                            marcar_procesado(message_id)
                         
                         # Verificar si es mensaje de Studio 28
                         if text.strip().lower().startswith('studio 28'):
                             print("Reenviando a Studio 28...")
-                            reenviar_a_studio28(from_phone, text)
+                            reenviar_a_studio28(from_phone, text, message_id)
                         else:
                             # Procesar normalmente en finanzas
                             handler.process_message(from_phone, text)
     
     return 'ok', 200
 
-def reenviar_a_studio28(from_phone, text):
+def reenviar_a_studio28(from_phone, text, message_id):
     """Reenvía el mensaje al bot de Studio 28."""
     try:
         payload = {
             "from_phone": from_phone,
-            "text": text
+            "text": text,
+            "message_id": message_id
         }
         headers = {
             "Content-Type": "application/json",
@@ -73,6 +83,37 @@ def reenviar_a_studio28(from_phone, text):
         print(f"Reenvío a Studio 28: Status {response.status_code}")
     except Exception as e:
         print(f"Error reenviando a Studio 28: {e}")
+
+def verificar_duplicado(message_id):
+    """Consulta la hoja Mensajes Procesados para ver si ya existe."""
+    try:
+        result = handler.sheets.service.spreadsheets().values().get(
+            spreadsheetId=Config.SPREADSHEET_ID,
+            range='Mensajes Procesados!A:A'
+        ).execute()
+        values = result.get('values', [])
+        for row in values:
+            if row and row[0] == message_id:
+                return True
+        return False
+    except Exception as e:
+        print(f"Error verificando duplicado: {e}")
+        return False
+
+def marcar_procesado(message_id):
+    """Agrega el message_id a la hoja Mensajes Procesados."""
+    try:
+        values = [[message_id]]
+        body = {'values': values}
+        handler.sheets.service.spreadsheets().values().append(
+            spreadsheetId=Config.SPREADSHEET_ID,
+            range='Mensajes Procesados!A:A',
+            valueInputOption='USER_ENTERED',
+            insertDataOption='INSERT_ROWS',
+            body=body
+        ).execute()
+    except Exception as e:
+        print(f"Error marcando procesado: {e}")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

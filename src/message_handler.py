@@ -8,8 +8,9 @@ from src.whatsapp_service import WhatsAppService
 
 # Números autorizados para usar el bot
 NUMEROS_AUTORIZADOS = [
-    "51986981127",  # Tú, Daniel
-    "51924400897"    # Tu pareja, Leslye 
+    "51986981127",  # Daniel
+    "51924400897",  # Leslye
+    "51961906635"   # Shadia
 ]
 
 class MessageHandler:

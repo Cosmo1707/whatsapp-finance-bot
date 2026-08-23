@@ -58,7 +58,7 @@ def webhook():
                             marcar_procesado(message_id)
                         
                         # Verificar si es mensaje de Studio 28
-                        if text.strip().lower().startswith('studio 28'):
+                        if text.strip().lower().startswith('studio 28') or text.strip().lower() in ['si', 'sí', 'no']:
                             print("Reenviando a Studio 28...")
                             reenviar_a_studio28(from_phone, text, message_id)
                         else:

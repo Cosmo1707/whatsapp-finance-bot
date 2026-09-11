@@ -1,4 +1,10 @@
-from datetime import datetime, timedelta, timezone
+from src.timestamps import timestamp_lima
+
+PERSONAS = {
+    "51986981127": "Daniel",
+    "51924400897": "Leslye",
+    "51961906635": "Shadia",
+}
 
 def parse_message(message, from_phone=None):
     """
@@ -28,9 +34,7 @@ def parse_message(message, from_phone=None):
     else:
         descripcion = categoria
     
-    # Fecha automática en hora peruana (UTC-5)
-    fecha = datetime.now(timezone.utc) - timedelta(hours=5)
-    fecha = fecha.strftime('%d/%m/%Y %H:%M')
+    fecha = timestamp_lima()
     
     # Determinar tipo
     categorias_ingreso = ["salario", "sueldo", "cobro", "venta", "ingreso"]
@@ -40,12 +44,7 @@ def parse_message(message, from_phone=None):
         tipo = "Egreso"
     
     # Determinar persona
-    if from_phone == "51986981127":
-        persona = "Daniel"
-    elif from_phone == "51924400897":
-        persona = "Leslye"
-    else:
-        persona = "Desconocido"
+    persona = PERSONAS.get(from_phone, "Desconocido")
     
     return {
         'fecha': fecha,

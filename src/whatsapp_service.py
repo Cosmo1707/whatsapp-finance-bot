@@ -22,6 +22,10 @@ class WhatsAppService:
             "type": "text",
             "text": {"body": message}
         }
-        response = requests.post(self.api_url, headers=self.headers, json=payload)
-        print(f"DEBUG SEND: Status {response.status_code} | Response: {response.text}")
-        return response.json()
+        response = requests.post(self.api_url, headers=self.headers, json=payload,
+                                 timeout=(5, 20))
+        response.raise_for_status()
+        result = response.json()
+        if not result.get('messages') or not result['messages'][0].get('id'):
+            raise ValueError("WhatsApp no confirmó la aceptación del mensaje")
+        return result

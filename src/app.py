@@ -6,14 +6,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from flask import Flask, request
 import requests
 from config.settings import Config
-from src.message_handler import MessageHandler
+from src.message_handler import MessageHandler, PROCESSING_LOCK
 
 app = Flask(__name__)
 handler = MessageHandler()
 
 # URL del bot de Studio 28 y token interno compartido
 STUDIO28_URL = "https://studio28-bot.onrender.com/webhook-interno"
-STUDIO28_TOKEN = "studio28_interno_secreto_123"
+STUDIO28_TOKEN = os.getenv("STUDIO28_TOKEN")
 
 @app.route('/webhook', methods=['GET'])
 def verify_webhook():
@@ -33,39 +33,38 @@ def verify_webhook():
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    """Recibe mensajes de WhatsApp."""
-    data = request.json
-    
+    """Recibe mensajes; un fallo de persistencia devuelve 503 para reentrega."""
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return 'Bad Request', 400
+    failed = False
     if data.get('object') == 'whatsapp_business_account':
         for entry in data.get('entry', []):
             for change in entry.get('changes', []):
-                value = change.get('value', {})
-                messages = value.get('messages', [])
-                
-                for message in messages:
-                    if message.get('type') == 'text':
-                        from_phone = message.get('from')
-                        text = message.get('text', {}).get('body', '')
-                        message_id = message.get('id', '')
-                        
-                        print(f"DEBUG: Mensaje de {from_phone}: {text}")
-                        
-                        # Verificar duplicado para cualquier mensaje (finanzas o studio28)
-                        if message_id:
-                            if verificar_duplicado(message_id):
-                                print(f"Mensaje duplicado en finanzas: {message_id}")
-                                continue
-                            marcar_procesado(message_id)
-                        
-                        # Verificar si es mensaje de Studio 28
-                        if text.strip().lower().startswith('studio 28') or text.strip().lower() in ['si', 'sí', 'no']:
-                            print("Reenviando a Studio 28...")
-                            reenviar_a_studio28(from_phone, text, message_id)
-                        else:
-                            # Procesar normalmente en finanzas
-                            handler.process_message(from_phone, text)
-    
-    return 'ok', 200
+                for message in change.get('value', {}).get('messages', []):
+                    if message.get('type') != 'text':
+                        continue
+                    from_phone = message.get('from')
+                    text = message.get('text', {}).get('body', '')
+                    message_id = message.get('id', '')
+                    if not message_id or not from_phone or not isinstance(text, str):
+                        failed = True
+                        continue
+                    try:
+                        with PROCESSING_LOCK:
+                            normalized = text.strip().lower()
+                            if normalized.startswith('studio 28') or normalized in ['si', 'sí', 'no']:
+                                # Puente legado: conserva ruteo, payload, token y marcado.
+                                if verificar_duplicado(message_id):
+                                    continue
+                                marcar_procesado(message_id)
+                                reenviar_a_studio28(from_phone, text, message_id)
+                            else:
+                                handler.process_message(from_phone, text, message_id)
+                    except Exception:
+                        app.logger.exception("Fallo procesando message_id=%s", message_id)
+                        failed = True
+    return ('Retry', 503) if failed else ('ok', 200)
 
 def reenviar_a_studio28(from_phone, text, message_id):
     """Reenvía el mensaje al bot de Studio 28."""
@@ -120,4 +119,5 @@ def ping():
     return 'pong', 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', '5000')), debug=False,
+            use_reloader=False)
